@@ -1,0 +1,551 @@
+package net.hrapp.hr.service
+
+import android.app.*
+import android.content.Context
+import android.content.Intent
+import android.os.IBinder
+import android.os.PowerManager
+import android.os.SystemClock
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.hrapp.hr.HeartMonitorApp
+import net.hrapp.hr.MainActivity
+import net.hrapp.hr.R
+import net.hrapp.hr.api.ApiClient
+import net.hrapp.hr.api.OfflineBuffer
+import net.hrapp.hr.alert.AlertManager
+import net.hrapp.hr.ble.BleManager
+import net.hrapp.hr.ble.SignalQualityDetector
+import net.hrapp.hr.data.HeartRateData
+import net.hrapp.hr.data.PreferencesManager
+
+class HeartMonitorService : Service() {
+
+    companion object {
+        private const val TAG = "HeartMonitorService"
+        private const val NOTIFICATION_ID = 1001
+        private const val WAKELOCK_TAG = "HeartMonitor::ServiceWakeLock"
+
+        // Intent action constants for service control
+        const val ACTION_START = "net.hrapp.hr.action.START"
+        const val ACTION_STOP = "net.hrapp.hr.action.STOP"
+        const val ACTION_REQUEST_STATE = "net.hrapp.hr.action.REQUEST_STATE"
+
+        // Broadcast action constants (for UI updates)
+        const val ACTION_HEART_RATE_UPDATE = "net.hrapp.hr.action.HEART_RATE_UPDATE"
+        const val ACTION_CONNECTION_STATE = "net.hrapp.hr.action.CONNECTION_STATE"
+        const val ACTION_OFFLINE_COUNT = "net.hrapp.hr.action.OFFLINE_COUNT"
+        const val ACTION_DEVICE_INFO = "net.hrapp.hr.action.DEVICE_INFO"
+        const val ACTION_API_STATE = "net.hrapp.hr.action.API_STATE"
+
+        // Broadcast extra keys
+        const val EXTRA_HEART_RATE = "extra_heart_rate"
+        const val EXTRA_CONNECTION_STATE = "extra_connection_state"
+        const val EXTRA_OFFLINE_COUNT = "extra_offline_count"
+        const val EXTRA_BATTERY_LEVEL = "extra_battery_level"
+        const val EXTRA_SENSOR_CONTACT = "extra_sensor_contact"
+        const val EXTRA_RR_INTERVALS = "extra_rr_intervals"
+        const val EXTRA_SIGNAL_QUALITY = "extra_signal_quality"
+        const val EXTRA_SENT_COUNT = "extra_sent_count"
+        const val EXTRA_API_CONNECTED = "extra_api_connected"
+
+        // Offline buffer flush interval (5 minutes)
+        private const val BUFFER_FLUSH_INTERVAL_MS = 5 * 60 * 1000L
+
+        // Watchdog timer - reconnect if no data received
+        private const val WATCHDOG_TIMEOUT_MS = 10_000L
+
+        // Sensor contact tolerance - consecutive false readings before treating as "no contact"
+        private const val SENSOR_CONTACT_TOLERANCE = 3
+
+        // Connectivity loss thresholds
+        private const val API_FAILURE_ALERT_THRESHOLD = 5   // 5 consecutive API failures
+        private const val BLE_DISCONNECT_ALERT_MS = 30_000L // Alert after 30s BLE disconnect
+    }
+
+    private lateinit var bleManager: BleManager
+    private lateinit var offlineBuffer: OfflineBuffer
+    private lateinit var signalQualityDetector: SignalQualityDetector
+    private lateinit var alertManager: AlertManager
+    private lateinit var prefs: PreferencesManager
+    private var wakeLock: PowerManager.WakeLock? = null
+
+    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var bufferFlushJob: Job? = null
+    private var watchdogJob: Job? = null
+    private var bleDisconnectJob: Job? = null
+
+    private var currentHeartRate: Int = 0
+    private var isConnected: Boolean = false
+    private var sentCount: Int = 0
+    private var errorCount: Int = 0
+    private var isMonitoringStarted: Boolean = false
+    private var currentBatteryLevel: Int? = null
+    private var currentSensorContact: Boolean? = null
+
+    // Last data received time for watchdog
+    private var lastDataReceivedTime: Long = 0L
+
+    // Sensor contact tolerance - consecutive "no contact" counter
+    private var noContactCounter: Int = 0
+
+    // Connectivity loss tracking
+    private var consecutiveApiFailures: Int = 0
+    private var apiConnected: Boolean = true
+
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "Service onCreate")
+
+        bleManager = BleManager(this)
+        offlineBuffer = OfflineBuffer(this)
+        signalQualityDetector = SignalQualityDetector()
+        alertManager = AlertManager(this)
+        prefs = PreferencesManager(this)
+
+        setupBleCallbacks()
+        acquireWakeLock()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "Service onStartCommand, action: ${intent?.action}")
+
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_REQUEST_STATE -> {
+                // UI durumu istedi, mevcut durumu broadcast et
+                broadcastCurrentState()
+                return START_STICKY
+            }
+            else -> {
+                // Mode check: if in Client mode, redirect to correct service
+                if (!prefs.isServerMode) {
+                    Log.w(TAG, "Not in server mode, redirecting to ClientMonitorService")
+                    startForeground(NOTIFICATION_ID, createNotification(getString(R.string.notification_text_connecting)))
+                    if (prefs.isServiceEnabled) {
+                        startForegroundService(Intent(this, ClientMonitorService::class.java).apply {
+                            action = ClientMonitorService.ACTION_START
+                        })
+                    }
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                startForeground(NOTIFICATION_ID, createNotification(getString(R.string.notification_text_connecting)))
+                startMonitoring()
+            }
+        }
+
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.w(TAG, "Task removed, scheduling restart...")
+
+        // Restart the correct service based on mode
+        val restartIntent = if (prefs.isServerMode) {
+            Intent(this, HeartMonitorService::class.java).apply {
+                action = ACTION_START
+            }
+        } else {
+            Intent(this, ClientMonitorService::class.java).apply {
+                action = ClientMonitorService.ACTION_START
+            }
+        }
+
+        val pendingIntent = PendingIntent.getService(
+            this,
+            1,
+            restartIntent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            SystemClock.elapsedRealtime() + 1000,
+            pendingIntent
+        )
+
+        super.onTaskRemoved(rootIntent)
+    }
+
+    override fun onDestroy() {
+        Log.d(TAG, "Service onDestroy")
+
+        isMonitoringStarted = false
+        stopWatchdogTimer()
+        bleDisconnectJob?.cancel()
+        bleDisconnectJob = null
+        bufferFlushJob?.cancel()
+        bufferFlushJob = null
+        serviceScope.cancel()
+
+        bleManager.destroy()
+        releaseWakeLock()
+
+        super.onDestroy()
+    }
+
+    private fun setupBleCallbacks() {
+        bleManager.onHeartRateReceived = { data ->
+            // Reset watchdog timer - data received
+            lastDataReceivedTime = System.currentTimeMillis()
+
+            // Sensor contact tolerance check
+            val rawContact = data.sensorContact ?: true
+            val shouldProcess: Boolean
+
+            if (!rawContact) {
+                noContactCounter++
+                Log.d(TAG, "No contact detected, counter: $noContactCounter/$SENSOR_CONTACT_TOLERANCE")
+
+                // Within tolerance, do not process
+                shouldProcess = noContactCounter < SENSOR_CONTACT_TOLERANCE
+                if (!shouldProcess) {
+                    Log.d(TAG, "Contact tolerance exceeded - treating as no contact")
+                }
+            } else {
+                // Contact detected - reset counter
+                noContactCounter = 0
+                shouldProcess = true
+            }
+
+            // Process data if within tolerance
+            val hasContact = rawContact || (noContactCounter < SENSOR_CONTACT_TOLERANCE)
+            currentSensorContact = hasContact
+
+            if (shouldProcess) {
+                // Evaluate signal quality with SignalQualityDetector
+                val qualityResult = signalQualityDetector.addReading(data.heartRate)
+
+                Log.d(TAG, "Quality: ${qualityResult.quality}, Stage: ${qualityResult.stage}, " +
+                    "Reason: ${qualityResult.reason}, IsNoise: ${qualityResult.isNoise}")
+
+                // Is quality acceptable? (not noise)
+                if (!qualityResult.isNoise) {
+                    currentHeartRate = data.heartRate
+                    val qualityPercent = (qualityResult.quality * 100).toInt()
+                    updateNotification("Heart Rate: ${data.heartRate} BPM (Q:$qualityPercent%)")
+                    broadcastHeartRate(data.heartRate, true, data.rrIntervals, qualityResult.quality)
+
+                    // Threshold check and alert
+                    alertManager.checkAndAlert(
+                        heartRate = data.heartRate,
+                        minThreshold = prefs.minHeartRateThreshold,
+                        maxThreshold = prefs.maxHeartRateThreshold
+                    )
+
+                    // Send to API
+                    serviceScope.launch {
+                        val result = ApiClient.sendHeartRate(data)
+                        if (result.isSuccess) {
+                            sentCount++
+                            Log.d(TAG, "Sent: $sentCount, Errors: $errorCount")
+                            // API connection restored, clear notification
+                            if (!apiConnected) {
+                                apiConnected = true
+                                consecutiveApiFailures = 0
+                                alertManager.clearConnectivityState(AlertManager.ConnectivityAlertType.API_UNREACHABLE)
+                                broadcastApiState(true)
+                                Log.i(TAG, "API connection restored")
+                            }
+                            consecutiveApiFailures = 0
+                        } else {
+                            errorCount++
+                            consecutiveApiFailures++
+                            offlineBuffer.add(data)
+                            broadcastOfflineCount(offlineBuffer.getCount())
+                            Log.w(TAG, "Failed to send, added to offline buffer (consecutive: $consecutiveApiFailures)")
+                            // Alert if consecutive failure threshold exceeded
+                            if (consecutiveApiFailures >= API_FAILURE_ALERT_THRESHOLD) {
+                                if (apiConnected) {
+                                    apiConnected = false
+                                    updateNotification(getString(R.string.notification_api_error))
+                                    broadcastApiState(false)
+                                }
+                                alertManager.checkConnectivityAlert(AlertManager.ConnectivityAlertType.API_UNREACHABLE)
+                            }
+                        }
+                    }
+                } else {
+                    // Noise detected - do not send data
+                    Log.w(TAG, "Noise detected - HR ignored: ${data.heartRate}, Reason: ${qualityResult.reason}")
+                    updateNotification("Signal quality low")
+                    broadcastHeartRate(0, false, emptyList(), 0f)
+                }
+            } else {
+                // Tolerance exceeded - no contact state
+                Log.w(TAG, "No contact - tolerance exceeded ($noContactCounter)")
+                updateNotification("No sensor contact")
+                broadcastHeartRate(0, false, emptyList(), 0f)
+            }
+        }
+
+        bleManager.onConnectionStateChanged = { connected, status ->
+            isConnected = connected
+            updateNotification(if (connected) "Heart Rate: $currentHeartRate BPM" else status)
+            broadcastConnectionState(if (connected) "CONNECTED" else status)
+
+            if (connected) {
+                // Connected - start watchdog timer
+                lastDataReceivedTime = System.currentTimeMillis()
+                noContactCounter = 0
+                startWatchdogTimer()
+                // Cancel BLE disconnect timer and clear notification
+                bleDisconnectJob?.cancel()
+                bleDisconnectJob = null
+                alertManager.clearConnectivityState(AlertManager.ConnectivityAlertType.BLE_DISCONNECTED)
+            } else {
+                // Disconnected - stop watchdog timer
+                stopWatchdogTimer()
+                // Start BLE disconnect alert timer
+                bleDisconnectJob?.cancel()
+                bleDisconnectJob = serviceScope.launch {
+                    delay(BLE_DISCONNECT_ALERT_MS)
+                    Log.w(TAG, "BLE disconnected for ${BLE_DISCONNECT_ALERT_MS}ms, triggering alert")
+                    alertManager.checkConnectivityAlert(AlertManager.ConnectivityAlertType.BLE_DISCONNECTED)
+                }
+            }
+        }
+
+        bleManager.onBatteryLevelReceived = { level ->
+            Log.d(TAG, "Battery: $level%")
+            currentBatteryLevel = level
+            broadcastDeviceInfo()
+        }
+
+        bleManager.onScanningStateChanged = { scanning ->
+            if (scanning) {
+                broadcastConnectionState("SCANNING")
+            }
+        }
+
+        bleManager.onBluetoothStateChanged = { enabled ->
+            if (!enabled) {
+                broadcastConnectionState("BLUETOOTH_OFF")
+                updateNotification("Bluetooth disabled")
+            }
+        }
+    }
+
+    private var currentRrIntervals: List<Int> = emptyList()
+    private var currentSignalQuality: Float = 0f
+
+    private fun broadcastHeartRate(heartRate: Int, sensorContact: Boolean? = null, rrIntervals: List<Int>? = null, signalQuality: Float? = null) {
+        rrIntervals?.let { currentRrIntervals = it }
+        signalQuality?.let { currentSignalQuality = it }
+        sendBroadcast(Intent(ACTION_HEART_RATE_UPDATE).apply {
+            putExtra(EXTRA_HEART_RATE, heartRate)
+            sensorContact?.let { putExtra(EXTRA_SENSOR_CONTACT, it) }
+            putExtra(EXTRA_RR_INTERVALS, currentRrIntervals.toIntArray())
+            putExtra(EXTRA_SIGNAL_QUALITY, currentSignalQuality)
+            putExtra(EXTRA_SENT_COUNT, sentCount)
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastDeviceInfo() {
+        sendBroadcast(Intent(ACTION_DEVICE_INFO).apply {
+            currentBatteryLevel?.let { putExtra(EXTRA_BATTERY_LEVEL, it) }
+            currentSensorContact?.let { putExtra(EXTRA_SENSOR_CONTACT, it) }
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastConnectionState(state: String) {
+        sendBroadcast(Intent(ACTION_CONNECTION_STATE).apply {
+            putExtra(EXTRA_CONNECTION_STATE, state)
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastOfflineCount(count: Int) {
+        sendBroadcast(Intent(ACTION_OFFLINE_COUNT).apply {
+            putExtra(EXTRA_OFFLINE_COUNT, count)
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastApiState(connected: Boolean) {
+        sendBroadcast(Intent(ACTION_API_STATE).apply {
+            putExtra(EXTRA_API_CONNECTED, connected)
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastCurrentState() {
+        Log.d(TAG, "Broadcasting current state: connected=$isConnected, hr=$currentHeartRate, battery=$currentBatteryLevel")
+
+        // Broadcast connection state
+        val connectionState = when {
+            !bleManager.isBluetoothEnabled() -> "BLUETOOTH_OFF"
+            isConnected -> "CONNECTED"
+            else -> "SCANNING"
+        }
+        broadcastConnectionState(connectionState)
+
+        // Broadcast heart rate if connected
+        if (isConnected && currentHeartRate > 0) {
+            broadcastHeartRate(currentHeartRate, currentSensorContact, currentRrIntervals, currentSignalQuality)
+        }
+
+        // Broadcast device info (battery, sensor contact)
+        broadcastDeviceInfo()
+
+        // Broadcast offline count
+        serviceScope.launch {
+            broadcastOfflineCount(offlineBuffer.getCount())
+        }
+
+        // Broadcast API state
+        broadcastApiState(apiConnected)
+    }
+
+    private fun startWatchdogTimer() {
+        stopWatchdogTimer()
+
+        watchdogJob = serviceScope.launch {
+            Log.d(TAG, "Watchdog timer started (timeout: ${WATCHDOG_TIMEOUT_MS}ms)")
+            while (isActive && isConnected) {
+                delay(WATCHDOG_TIMEOUT_MS / 2) // Her 5 saniyede kontrol et
+
+                val timeSinceLastData = System.currentTimeMillis() - lastDataReceivedTime
+                Log.v(TAG, "Watchdog check: ${timeSinceLastData}ms since last data")
+
+                if (timeSinceLastData > WATCHDOG_TIMEOUT_MS) {
+                    Log.w(TAG, "Watchdog timeout! No data for ${timeSinceLastData}ms, forcing reconnect...")
+                    updateNotification("Reconnecting...")
+
+                    // Force reconnect on main thread
+                    withContext(Dispatchers.Main) {
+                        bleManager.forceReconnect()
+                    }
+                    break
+                }
+            }
+        }
+    }
+
+    private fun stopWatchdogTimer() {
+        watchdogJob?.cancel()
+        watchdogJob = null
+        Log.d(TAG, "Watchdog timer stopped")
+    }
+
+    private fun startMonitoring() {
+        if (isMonitoringStarted) {
+            Log.d(TAG, "Monitoring already started, skipping...")
+            return
+        }
+
+        // Stop the other service (to prevent conflicts)
+        try {
+            stopService(Intent(this, ClientMonitorService::class.java))
+        } catch (e: Exception) {
+            Log.d(TAG, "ClientMonitorService already stopped")
+        }
+
+        Log.d(TAG, "Starting monitoring...")
+        isMonitoringStarted = true
+
+        bleManager.initialize()
+
+        // Broadcast initial offline count
+        serviceScope.launch {
+            broadcastOfflineCount(offlineBuffer.getCount())
+        }
+
+        // Check if Bluetooth is enabled before scanning
+        if (!bleManager.isBluetoothEnabled()) {
+            Log.w(TAG, "Bluetooth is disabled")
+            broadcastConnectionState("BLUETOOTH_OFF")
+            updateNotification("Bluetooth disabled")
+            // BleManager will auto-start scan when Bluetooth is turned on
+        } else {
+            // Broadcast initial state as scanning
+            broadcastConnectionState("SCANNING")
+        }
+
+        bleManager.startScan()
+
+        // Offline buffer flush job
+        if (bufferFlushJob == null || bufferFlushJob?.isActive != true) {
+            bufferFlushJob = serviceScope.launch {
+                while (isActive) {
+                    delay(BUFFER_FLUSH_INTERVAL_MS)
+                    Log.d(TAG, "Flushing offline buffer...")
+                    offlineBuffer.flush()
+                    broadcastOfflineCount(offlineBuffer.getCount())
+                }
+            }
+        }
+    }
+
+    private fun createNotification(text: String): Notification {
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val stopIntent = PendingIntent.getService(
+            this,
+            1,
+            Intent(this, HeartMonitorService::class.java).apply { action = ACTION_STOP },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, HeartMonitorApp.NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentIntent(pendingIntent)
+            .addAction(android.R.drawable.ic_media_pause, getString(R.string.dashboard_btn_stop), stopIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .build()
+    }
+
+    private fun updateNotification(text: String) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, createNotification(text))
+    }
+
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            WAKELOCK_TAG
+        ).apply {
+            acquire(10 * 60 * 60 * 1000L) // 10 hours
+        }
+        Log.d(TAG, "WakeLock acquired")
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+                Log.d(TAG, "WakeLock released")
+            }
+        }
+        wakeLock = null
+    }
+}

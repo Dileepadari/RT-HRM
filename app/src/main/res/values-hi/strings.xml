@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">हार्ट मॉनिटर</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">हार्ट रेट मॉनिटरिंग</string>
+    <string name="notification_channel_description">बैकग्राउंड हार्ट रेट मॉनिटरिंग सर्विस</string>
+    <string name="notification_title">हार्ट रेट मॉनिटर हो रहा है</string>
+    <string name="notification_text_connecting">डिवाइस से कनेक्ट हो रहा है…</string>
+    <string name="notification_text_connected">कनेक्टेड - %d BPM</string>
+    <string name="notification_text_disconnected">डिस्कनेक्टेड - फिर से कनेक्ट हो रहा है…</string>
+
+    <!-- Navigation -->
+    <string name="nav_live">लाइव</string>
+    <string name="nav_monitor">मॉनिटर</string>
+    <string name="nav_settings">सेटिंग्स</string>
+
+    <!-- Connection Status -->
+    <string name="status_connected">कनेक्टेड</string>
+    <string name="status_connecting">कनेक्ट हो रहा है…</string>
+    <string name="status_searching">खोज रहा है…</string>
+    <string name="status_disconnected">डिस्कनेक्टेड</string>
+    <string name="status_bluetooth_off">ब्लूटूथ बंद है</string>
+
+    <!-- Heart Rate Display -->
+    <string name="hr_no_connection">कोई कनेक्शन नहीं</string>
+    <string name="hr_status_low">कम</string>
+    <string name="hr_status_high">अधिक</string>
+    <string name="hr_status_high_warning">अधिक!</string>
+    <string name="hr_status_normal">सामान्य</string>
+    <string name="hr_unit_bpm">BPM</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">हार्ट रेट मॉनिटर</string>
+    <string name="dashboard_settings">सेटिंग्स</string>
+    <string name="dashboard_bluetooth">ब्लूटूथ</string>
+    <string name="dashboard_on">चालू</string>
+    <string name="dashboard_off">बंद</string>
+    <string name="dashboard_bluetooth_on">चालू</string>
+    <string name="dashboard_bluetooth_off">बंद</string>
+    <string name="dashboard_device">डिवाइस</string>
+    <string name="dashboard_device_label">हार्ट रेट सेंसर</string>
+    <string name="dashboard_btn_stop">रोकें</string>
+    <string name="dashboard_btn_start">शुरू करें</string>
+    <string name="dashboard_service_running">सर्विस चल रही है</string>
+    <string name="dashboard_service_stopped">सर्विस बंद है</string>
+    <string name="dashboard_last_measurements">पिछले %d मापन</string>
+    <string name="dashboard_stat_min">न्यूनतम: %d</string>
+    <string name="dashboard_stat_avg">औसत: %d</string>
+    <string name="dashboard_stat_max">अधिकतम: %d</string>
+    <string name="dashboard_info_battery">बैटरी</string>
+    <string name="dashboard_info_contact">संपर्क</string>
+    <string name="dashboard_info_today">आज</string>
+    <string name="dashboard_info_last_update">पहले</string>
+    <string name="dashboard_contact_yes">हाँ</string>
+    <string name="dashboard_contact_no">नहीं</string>
+    <string name="dashboard_today_stats">आज के आंकड़े</string>
+    <string name="dashboard_stat_label_min">न्यूनतम</string>
+    <string name="dashboard_stat_label_avg">औसत</string>
+    <string name="dashboard_stat_label_max">अधिकतम</string>
+    <string name="dashboard_offline_title">%d रिकॉर्ड्स पेंडिंग</string>
+    <string name="dashboard_offline_subtitle">इंटरनेट उपलब्ध होने पर भेजे जाएंगे</string>
+    <string name="dashboard_no_sensor_contact_title">कोई सेंसर संपर्क नहीं</string>
+    <string name="dashboard_no_sensor_contact_message">कृपया हार्ट रेट सेंसर पहनें।\nसेंसर आपकी त्वचा को छूना चाहिए।</string>
+    <string name="dashboard_signal_quality">मापन सटीकता</string>
+    <string name="dashboard_quality_excellent">उत्कृष्ट</string>
+    <string name="dashboard_quality_good">अच्छा</string>
+    <string name="dashboard_quality_fair">ठीक</string>
+    <string name="dashboard_quality_poor">खराब</string>
+    <string name="dashboard_quality_noise">शोर</string>
+    <string name="dashboard_quality_desc_excellent">सिग्नल की गुणवत्ता बहुत अच्छी है, डेटा विश्वसनीय है</string>
+    <string name="dashboard_quality_desc_good">सिग्नल की गुणवत्ता अच्छी है</string>
+    <string name="dashboard_quality_desc_fair">सिग्नल का विश्लेषण किया जा रहा है…</string>
+    <string name="dashboard_quality_desc_poor">सिग्नल की गुणवत्ता खराब है, सेंसर जांचें</string>
+    <string name="dashboard_quality_desc_noise">शोर का पता चला, डेटा नहीं भेजा जा रहा है</string>
+    <string name="dashboard_rr_intervals">RR अंतराल</string>
+    <string name="dashboard_rr_avg">औसत: %dms</string>
+    <string name="dashboard_bluetooth_warning_title">ब्लूटूथ बंद है</string>
+    <string name="dashboard_bluetooth_warning_message">हार्ट रेट सेंसर से कनेक्ट करने के लिए\nअपने फोन पर ब्लूटूथ चालू करें</string>
+    <string name="dashboard_btn_enable_bluetooth">ब्लूटूथ चालू करें</string>
+
+    <!-- Time formatters -->
+    <string name="time_now">अभी</string>
+    <string name="time_seconds">%dसे</string>
+    <string name="time_minutes">%dमि</string>
+    <string name="time_hours">%dघं</string>
+    <string name="time_days">%dदि</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="settings_back">पीछे</string>
+    <string name="settings_version">हार्ट मॉनिटर v1.0.0</string>
+
+    <!-- Settings - Language -->
+    <string name="settings_language">भाषा सेटिंग्स</string>
+    <string name="settings_language_title">ऐप की भाषा</string>
+    <string name="settings_language_system">सिस्टम की भाषा</string>
+    <string name="settings_language_desc">ऐप के लिए भाषा का चयन करें</string>
+
+    <!-- Settings - Device Mode -->
+    <string name="settings_mode_title">डिवाइस मोड</string>
+    <string name="settings_mode_server">सर्वर (डेटा कलेक्शन)</string>
+    <string name="settings_mode_server_desc">BLE हार्ट रेट सेंसर से डेटा एकत्र करता है और API को भेजता है</string>
+    <string name="settings_mode_client">क्लाइंट (मॉनिटरिंग)</string>
+    <string name="settings_mode_client_desc">WebView के माध्यम से लाइव हार्ट रेट डेटा मॉनिटर करता है</string>
+
+    <!-- Settings - Server Settings -->
+    <string name="settings_server_title">सर्वर सेटिंग्स</string>
+    <string name="settings_api_url">API URL</string>
+    <string name="settings_api_url_desc">डेटा भेजने/प्राप्त करने के लिए सर्वर का पता</string>
+    <string name="settings_api_url_hint">https://example.com/hr/api</string>
+    <string name="settings_api_key">API की (Key)</string>
+    <string name="settings_api_key_desc">सर्वर के लिए प्रमाणीकरण की (Authentication key)</string>
+    <string name="settings_api_key_hint">अपनी API की दर्ज करें</string>
+
+    <!-- Settings - BLE Device -->
+    <string name="settings_ble_title">BLE डिवाइस सेटिंग्स</string>
+    <string name="settings_device_mac">डिवाइस MAC एड्रेस</string>
+    <string name="settings_device_mac_desc">कनेक्ट करने के लिए हार्ट रेट सेंसर का MAC एड्रेस</string>
+    <string name="settings_device_mac_hint">XX:XX:XX:XX:XX:XX</string>
+    <string name="settings_btn_scan">स्कैन</string>
+
+    <!-- Settings - Thresholds -->
+    <string name="settings_thresholds_title">हार्ट रेट सीमा (Thresholds)</string>
+    <string name="settings_threshold_min">न्यूनतम हार्ट रेट: %d BPM</string>
+    <string name="settings_threshold_min_desc">इस मान से नीचे की हार्ट रेट \"कम\" के रूप में दिखाई जाती है</string>
+    <string name="settings_threshold_max">अधिकतम हार्ट रेट: %d BPM</string>
+    <string name="settings_threshold_max_desc">इस मान से ऊपर की हार्ट रेट \"अधिक\" के रूप में दिखाई जाती है</string>
+    <string name="settings_threshold_low">कम</string>
+    <string name="settings_threshold_normal">सामान्य</string>
+    <string name="settings_threshold_high">अधिक</string>
+
+    <!-- Settings - Alerts -->
+    <string name="settings_alerts_title">अलर्ट</string>
+    <string name="settings_alerts_enabled">ध्वनि अलर्ट</string>
+    <string name="settings_alerts_enabled_desc">सीमा पार होने पर ध्वनि बजाएं</string>
+    <string name="settings_alerts_vibration">वाइब्रेशन</string>
+    <string name="settings_alerts_vibration_desc">अलर्ट के लिए फोन में वाइब्रेशन करें</string>
+    <string name="settings_alerts_sound">अलर्ट ध्वनि</string>
+    <string name="settings_alerts_sound_default">डिफ़ॉल्ट</string>
+    <string name="settings_alert_window">जांच विंडो: %d सेकंड</string>
+    <string name="settings_alert_window_instant">जांच विंडो: तुरंत</string>
+    <string name="settings_alert_window_desc">पिछले X सेकंड की रीडिंग की जांच करता है</string>
+    <string name="settings_alert_exceed_count">सीमा पार गिनती: %d</string>
+    <string name="settings_alert_exceed_count_desc">अलर्ट के लिए न्यूनतम सीमा पार गिनती</string>
+    <string name="settings_alert_cooldown">कूलडाउन अवधि</string>
+    <string name="settings_alert_cooldown_desc">अलर्ट के बीच न्यूनतम प्रतीक्षा समय</string>
+    <string name="settings_alert_cooldown_min">%d मिनट</string>
+    <string name="settings_alert_summary">पिछले %1$d सेकंड में %2$d बार सीमा पार होने पर अलर्ट।\nअलर्ट के बीच कम से कम %3$d मिनट प्रतीक्षा करें।</string>
+    <string name="settings_alert_summary_instant">हर सीमा पार होने पर तुरंत अलर्ट।\nअलर्ट के बीच कम से कम %d मिनट प्रतीक्षा करें।</string>
+
+    <!-- Alert Notifications -->
+    <string name="alert_low_title">कम हार्ट रेट अलर्ट</string>
+    <string name="alert_high_title">अधिक हार्ट रेट अलर्ट</string>
+    <string name="alert_low_message">हार्ट रेट %1$d BPM - सीमा (%2$d BPM) से नीचे!</string>
+    <string name="alert_high_message">हार्ट रेट %1$d BPM - सीमा (%2$d BPM) से ऊपर!</string>
+    <string name="alert_channel_name">हार्ट रेट अलर्ट</string>
+    <string name="alert_channel_desc">हार्ट रेट सीमा पार होने पर अलर्ट करता है</string>
+
+    <!-- Connectivity Alerts -->
+    <string name="alert_connectivity_api_title">सर्वर कनेक्शन टूट गया</string>
+    <string name="alert_connectivity_api_message">सर्वर तक नहीं पहुंचा जा सका।\n\nसंभावित कारण:\n• इंटरनेट कनेक्शन बंद है\n• सर्वर का पता गलत है या सर्वर ऑफलाइन है</string>
+    <string name="alert_connectivity_ble_title">सेंसर डिस्कनेक्ट हो गया</string>
+    <string name="alert_connectivity_ble_message">हार्ट रेट सेंसर से कनेक्शन टूट गया।\n\nसंभावित कारण:\n• सेंसर हटा दिया गया हो सकता है\n• फोन रेंज से बाहर हो सकता है\n• ब्लूटूथ बंद किया गया हो सकता है</string>
+    <string name="alert_connectivity_stale_title">कोई हार्ट रेट डेटा नहीं</string>
+    <string name="alert_connectivity_stale_message">कुछ समय से कोई नया हार्ट रेट डेटा नहीं।\n\nसंभावित कारण:\n• सेंसर हटा दिया गया हो सकता है\n• सेंसर वाले फोन का कनेक्शन टूट गया हो सकता है\n• सेंसर वाले फोन में इंटरनेट नहीं हो सकता है\n• सेंसर वाले फोन पर ऐप बंद हो गया हो सकता है</string>
+    <string name="notification_api_error">कोई सर्वर कनेक्शन नहीं</string>
+
+    <!-- Connectivity Popup (in-app) -->
+    <string name="popup_stale_title">कोई हार्ट रेट डेटा नहीं</string>
+    <string name="popup_stale_last_data">अंतिम डेटा %d सेकंड पहले प्राप्त हुआ</string>
+    <string name="popup_stale_causes">संभावित कारण:</string>
+    <string name="popup_stale_cause_sensor">सेंसर हटा दिया गया हो सकता है</string>
+    <string name="popup_stale_cause_connection">सेंसर वाले फोन का कनेक्शन टूट गया हो सकता है</string>
+    <string name="popup_stale_cause_internet">सेंसर वाले फोन में इंटरनेट नहीं हो सकता है</string>
+    <string name="popup_stale_cause_app">सेंसर वाले फोन पर ऐप बंद हो गया हो सकता है</string>
+    <string name="popup_api_error_title">कोई सर्वर कनेक्शन नहीं</string>
+    <string name="popup_api_error_causes">संभावित कारण:</string>
+    <string name="popup_api_error_cause_internet">इंटरनेट कनेक्शन बंद है</string>
+    <string name="popup_api_error_cause_server">सर्वर का पता गलत है या सर्वर ऑफलाइन है</string>
+
+    <!-- API Status -->
+    <string name="status_api_connected">API</string>
+    <string name="status_api_error">API</string>
+
+    <!-- Client Service Notifications -->
+    <string name="client_service_title">हार्ट रेट मॉनिटर</string>
+    <string name="client_service_starting">मॉनिटरिंग शुरू हो रही है…</string>
+    <string name="client_service_hr">हार्ट रेट: %d BPM</string>
+    <string name="client_service_waiting">डेटा की प्रतीक्षा हो रही है…</string>
+    <string name="client_service_error">कनेक्शन त्रुटि</string>
+    <string name="client_service_stale">कोई नया डेटा नहीं</string>
+
+    <!-- Settings - Service -->
+    <string name="settings_service_title">सर्विस</string>
+    <string name="settings_service_autostart">ऑटो स्टार्ट</string>
+    <string name="settings_service_autostart_server">फोन चालू होने पर BLE सर्विस शुरू करें</string>
+    <string name="settings_service_autostart_client">फोन चालू होने पर मॉनिटरिंग सर्विस शुरू करें</string>
+
+    <!-- Settings - Battery -->
+    <string name="settings_battery_title">बैटरी और प्रदर्शन (Performance)</string>
+    <string name="settings_battery_optimization">बैटरी ऑप्टिमाइज़ेशन</string>
+    <string name="settings_battery_disabled">अक्षम (Disabled)</string>
+    <string name="settings_battery_should_disable">अक्षम होना चाहिए</string>
+    <string name="settings_oem_settings">निर्माता (Manufacturer) सेटिंग्स</string>
+    <string name="settings_oem_settings_desc">ऑटोस्टार्ट और बैकग्राउंड अनुमतियां</string>
+
+    <!-- Settings - Device Info -->
+    <string name="settings_device_title">डिवाइस</string>
+    <string name="settings_device_connected">कनेक्टेड डिवाइस</string>
+
+    <!-- Client Monitor Screen -->
+    <string name="client_not_configured_title">सर्वर कॉन्फ़िगर नहीं किया गया</string>
+    <string name="client_not_configured_message">लाइव हार्ट रेट डेटा मॉनिटर करने के लिए,\nसेटिंग्स में सर्वर URL कॉन्फ़िगर करें।</string>
+    <string name="client_not_configured_hint">सेटिंग्स > सर्वर सेटिंग्स > API URL</string>
+
+    <!-- Device Picker Dialog -->
+    <string name="device_picker_title">आसपास के डिवाइस</string>
+    <string name="device_picker_close">बंद करें</string>
+    <string name="device_picker_scanning">स्कैन हो रहा है…</string>
+    <string name="device_picker_no_devices">कोई डिवाइस नहीं मिला</string>
+    <string name="device_picker_start_hint">स्कैन शुरू करने के लिए नीचे दिए गए बटन को दबाएं</string>
+    <string name="device_picker_btn_stop">रोकें</string>
+    <string name="device_picker_btn_start">स्कैन शुरू करें</string>
+    <string name="device_picker_signal_excellent">उत्कृष्ट</string>
+    <string name="device_picker_signal_good">अच्छा</string>
+    <string name="device_picker_signal_fair">ठीक</string>
+    <string name="device_picker_signal_weak">कमजोर</string>
+    <string name="device_picker_unknown_device">अज्ञात डिवाइस</string>
+
+    <!-- OEM Setup Screen -->
+    <string name="oem_title">सेटअप</string>
+    <string name="oem_back">पीछे</string>
+    <string name="oem_intro">ऐप को बैकग्राउंड में लगातार चलाने के लिए निम्नलिखित चरण पूरे करें:</string>
+    <string name="oem_btn_open_settings">सेटिंग्स खोलें</string>
+    <string name="oem_btn_done">हो गया</string>
+    <string name="oem_steps_remaining">%d चरण शेष</string>
+    <string name="oem_step_completed">पूरा हो गया</string>
+    <string name="oem_step_not_completed">पूरा नहीं हुआ</string>
+    <string name="oem_why_title">ये सेटिंग्स क्यों आवश्यक हैं?</string>
+    <string name="oem_why_message">कुछ फोन निर्माता बैटरी बचाने के लिए बैकग्राउंड ऐप्स को स्वचालित रूप से बंद कर देते हैं। ये सेटिंग्स सुनिश्चित करती हैं कि हार्ट रेट मॉनिटरिंग सर्विस लगातार चलती रहे।</string>
+
+    <!-- Auto-start Prompt -->
+    <string name="autostart_prompt_title">ऑटो स्टार्ट</string>
+    <string name="autostart_prompt_message">ऐप को बैकग्राउंड में लगातार चलने देने के लिए सेटिंग्स में ऑटो-स्टार्ट सक्षम करें।\n\nइस सेटिंग के बिना, फोन रीस्टार्ट होने पर ऐप स्वचालित रूप से शुरू नहीं होगा।</string>
+    <string name="autostart_prompt_settings">सेटिंग्स पर जाएं</string>
+    <string name="autostart_prompt_later">बाद में</string>
+</resources>
