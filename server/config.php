@@ -64,13 +64,53 @@ function jsonResponse(array $data, int $status = 200): void {
     exit;
 }
 
-// API key validation
-function validateApiKey(): void {
-    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? $_GET['api_key'] ?? null;
+// Whether anonymous reads are allowed. Off unless explicitly turned on.
+define('PUBLIC_READ', in_array(strtolower((string)getenv('HR_PUBLIC_READ')), ['1', 'true', 'yes'], true));
 
-    if ($apiKey !== API_KEY) {
+/**
+ * Whether this request carries a valid API key.
+ *
+ * hash_equals, not !==: string comparison returns at the first differing byte,
+ * and how long that takes is a measurement of how much of the key the caller
+ * guessed.
+ *
+ * The header only. The key used to be accepted from $_GET as well, which puts
+ * it in the web server's access log, in any Referer sent to a third party, and
+ * in the browser history of anyone who opens the URL.
+ */
+function hasValidApiKey(): bool {
+    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? null;
+    return is_string($apiKey) && hash_equals(API_KEY, $apiKey);
+}
+
+// API key validation, for the write endpoints.
+function validateApiKey(): void {
+    if (!hasValidApiKey()) {
         jsonResponse(['error' => 'Invalid API key'], 401);
     }
+}
+
+/**
+ * Gate for the read endpoints.
+ *
+ * These serve continuous heart rate, arrhythmia episodes and history - health
+ * data about one identifiable person - and nine of them used to answer anyone
+ * who knew the URL, with Access-Control-Allow-Origin: *, including the live SSE
+ * streams. Only the write path was ever checked.
+ *
+ * Passes for a request carrying the API key (the Android app, scripts) or for a
+ * browser that signed in to the dashboard, which is what live.php establishes.
+ * Set HR_PUBLIC_READ=1 to go back to the old behaviour.
+ */
+function requireReadAccess(): void {
+    if (PUBLIC_READ || hasValidApiKey()) return;
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (!empty($_SESSION['hr_auth'])) return;
+
+    jsonResponse(['error' => 'Unauthorized'], 401);
 }
 
 // Active device MAC address (device that sent data last)

@@ -14,6 +14,8 @@ if (ob_get_level()) ob_end_clean();
 
 require_once __DIR__ . '/../config.php';
 
+requireReadAccess();
+
 $allDevices = getAllowedDeviceList();
 $maxRuntime = 60;
 $startTime  = time();

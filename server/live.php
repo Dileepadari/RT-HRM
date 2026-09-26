@@ -6,6 +6,76 @@
 
 require_once __DIR__ . '/config.php';
 
+/*
+ * Dashboard sign-in.
+ *
+ * Everything below, and every endpoint this page fetches, is one person's
+ * heart rate: live, historical, and the arrhythmia episodes. It used to be
+ * readable by anyone who knew the URL.
+ *
+ * The API key doubles as the dashboard password - there is one user and it is
+ * already the shared secret with the Android app, so a second credential would
+ * be one more thing to lose. The session is what the read endpoints check.
+ *
+ * Set HR_PUBLIC_READ=1 in .env to skip this entirely and go back to the old
+ * behaviour.
+ */
+if (!PUBLIC_READ) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $loginError = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['hr_key'])) {
+        if (hash_equals(API_KEY, (string)$_POST['hr_key'])) {
+            session_regenerate_id(true);
+            $_SESSION['hr_auth'] = true;
+            // Redirect so a reload does not resubmit the key.
+            header('Location: ' . strtok($_SERVER['REQUEST_URI'] ?? '/', '?'));
+            exit;
+        }
+        $loginError = 'Incorrect key.';
+    }
+
+    if (empty($_SESSION['hr_auth'])) {
+        http_response_code(401);
+        header('Content-Type: text/html; charset=utf-8');
+        ?><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Heart Rate Monitor</title>
+    <style>
+        :root { color-scheme: dark; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+               background: #0f1115; color: #e6e6e6;
+               font-family: system-ui, -apple-system, sans-serif; }
+        form { display: grid; gap: 12px; width: min(320px, 90vw); }
+        h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px; }
+        p { margin: 0; font-size: .85rem; color: #9aa0a6; }
+        input { padding: 10px 12px; border-radius: 8px; border: 1px solid #2a2f3a;
+                background: #171a21; color: inherit; font-size: 1rem; }
+        button { padding: 10px 12px; border-radius: 8px; border: 0;
+                 background: #e5484d; color: #fff; font-size: 1rem; cursor: pointer; }
+        .error { color: #e5484d; }
+    </style>
+</head>
+<body>
+    <form method="post" autocomplete="off">
+        <h1>Heart Rate Monitor</h1>
+        <p>This dashboard shows health data. Enter the API key to continue.</p>
+        <input type="password" name="hr_key" placeholder="API key" autofocus required>
+        <button type="submit">Sign in</button>
+        <?php if ($loginError !== ''): ?><p class="error"><?= htmlspecialchars($loginError) ?></p><?php endif; ?>
+    </form>
+</body>
+</html><?php
+        exit;
+    }
+}
+
 // Localization
 $lang = $_GET['lang'] ?? $_COOKIE['hr_lang'] ?? 'en';
 if (!in_array($lang, ['en', 'hi'])) $lang = 'en';

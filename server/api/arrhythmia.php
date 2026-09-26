@@ -13,6 +13,8 @@
 
 require_once __DIR__ . '/../config.php';
 
+requireReadAccess();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(['error' => 'Method not allowed'], 405);
 }

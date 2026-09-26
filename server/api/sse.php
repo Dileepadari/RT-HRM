@@ -14,6 +14,8 @@ if (ob_get_level()) ob_end_clean();
 
 require_once __DIR__ . "/../config.php";
 
+requireReadAccess();
+
 $devices = getAllowedDeviceList();
 $placeholders = getAllowedDevicePlaceholders();
 $lastId = 0;

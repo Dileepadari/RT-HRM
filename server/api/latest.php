@@ -9,6 +9,8 @@ header("Cache-Control: no-cache");
 
 require_once __DIR__ . "/../config.php";
 
+requireReadAccess();
+
 try {
     $pdo = getDB();
     $devices = getAllowedDeviceList();

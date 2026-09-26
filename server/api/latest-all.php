@@ -10,6 +10,8 @@ header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../config.php';
 
+requireReadAccess();
+
 try {
     $devices = getAllActiveDevices();
     echo json_encode([

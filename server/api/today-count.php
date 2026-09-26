@@ -9,6 +9,8 @@ header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../config.php';
 
+requireReadAccess();
+
 $device = $_GET['device'] ?? getDefaultDevice();
 $allowed = getAllowedDeviceList();
 if (!in_array($device, $allowed)) {
