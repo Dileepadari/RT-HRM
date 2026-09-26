@@ -3,8 +3,26 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics.plugin)
+    // Firebase is applied below, only when its config file is present.
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics.plugin) apply false
+}
+
+// google-services.json is gitignored, and the Google Services plugin fails the
+// build outright when it is missing. Applied unconditionally, that made a fresh
+// clone unbuildable for anyone without the author's Firebase project. Drop the
+// file in and crash reporting comes back; without it the app builds and runs
+// with Crashlytics disabled (see HeartMonitorApp).
+val firebaseConfig = file("google-services.json")
+if (firebaseConfig.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+}
+
+// The Java version the project compiles against. This replaces
+// org.gradle.java.home, which named one machine's JDK by absolute path.
+kotlin {
+    jvmToolchain(17)
 }
 
 configurations.all {

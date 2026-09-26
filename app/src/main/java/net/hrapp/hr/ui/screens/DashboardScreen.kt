@@ -371,7 +371,7 @@ private fun DeviceConnectionBadge(
         ConnectionState.CONNECTING -> connectingText
         ConnectionState.SCANNING -> scanningText
         ConnectionState.DISCONNECTED -> disconnectedText
-        ConnectionState.BLUETOOTH_OFF -> "—"
+        ConnectionState.BLUETOOTH_OFF -> "--"
     }
 
     // Pulse animation for connected state

@@ -40,11 +40,11 @@ object OemCompatibilityHelper {
             manufacturer.contains("poco") -> OemInstruction(
                 title = "Xiaomi / Redmi / POCO Settings",
                 steps = listOf(
-                    "1. Settings → Apps → Manage apps → Heart Monitor",
+                    "1. Settings > Apps > Manage apps > Heart Monitor",
                     "2. Enable 'Auto-start' option",
-                    "3. 'Battery saver' → Select 'No restrictions'",
+                    "3. 'Battery saver' > Select 'No restrictions'",
                     "4. In the recent apps screen, swipe down on the app to LOCK it",
-                    "5. Security app → Battery → Background settings → Heart Monitor → Allow background activity"
+                    "5. Security app > Battery > Background settings > Heart Monitor > Allow background activity"
                 ),
                 settingsIntent = createXiaomiAutoStartIntent()
             )
@@ -52,10 +52,10 @@ object OemCompatibilityHelper {
             manufacturer.contains("samsung") -> OemInstruction(
                 title = "Samsung Settings",
                 steps = listOf(
-                    "1. Settings → Battery and device care → Battery",
-                    "2. 'Background usage limits' → Add Heart Monitor to 'Apps that won't sleep'",
+                    "1. Settings > Battery and device care > Battery",
+                    "2. 'Background usage limits' > Add Heart Monitor to 'Apps that won't sleep'",
                     "3. Turn OFF 'Adaptive battery'",
-                    "4. Settings → Apps → Heart Monitor → Battery → Select 'Unrestricted'"
+                    "4. Settings > Apps > Heart Monitor > Battery > Select 'Unrestricted'"
                 ),
                 settingsIntent = createSamsungBatteryIntent()
             )
@@ -64,10 +64,10 @@ object OemCompatibilityHelper {
             manufacturer.contains("honor") -> OemInstruction(
                 title = "Huawei / Honor Settings",
                 steps = listOf(
-                    "1. Settings → Battery → App launch → Heart Monitor",
+                    "1. Settings > Battery > App launch > Heart Monitor",
                     "2. Enable 'Manage manually'",
                     "3. Enable all three options: Auto-launch, Secondary launch, Run in background",
-                    "4. Phone Manager → Battery → Settings → Protected apps → Add Heart Monitor"
+                    "4. Phone Manager > Battery > Settings > Protected apps > Add Heart Monitor"
                 ),
                 settingsIntent = createHuaweiAutoStartIntent()
             )
@@ -75,9 +75,9 @@ object OemCompatibilityHelper {
             manufacturer.contains("oneplus") -> OemInstruction(
                 title = "OnePlus Settings",
                 steps = listOf(
-                    "1. Settings → Battery → Battery optimization → Heart Monitor → Select 'Don't optimize'",
-                    "2. Settings → Battery → Advanced optimization → Turn OFF",
-                    "3. Recent apps → LOCK Heart Monitor (lock icon)"
+                    "1. Settings > Battery > Battery optimization > Heart Monitor > Select 'Don't optimize'",
+                    "2. Settings > Battery > Advanced optimization > Turn OFF",
+                    "3. Recent apps > LOCK Heart Monitor (lock icon)"
                 ),
                 settingsIntent = createOnePlusBatteryIntent()
             )
@@ -86,9 +86,9 @@ object OemCompatibilityHelper {
             manufacturer.contains("realme") -> OemInstruction(
                 title = "OPPO / Realme Settings",
                 steps = listOf(
-                    "1. Settings → Battery → Power saver → Heart Monitor → 'Allow background activity'",
-                    "2. Settings → App management → Heart Monitor → 'Auto start' → ON",
-                    "3. Security center → Privacy permissions → Startup manager → Heart Monitor → ON"
+                    "1. Settings > Battery > Power saver > Heart Monitor > 'Allow background activity'",
+                    "2. Settings > App management > Heart Monitor > 'Auto start' > ON",
+                    "3. Security center > Privacy permissions > Startup manager > Heart Monitor > ON"
                 ),
                 settingsIntent = createOppoAutoStartIntent()
             )
@@ -96,9 +96,9 @@ object OemCompatibilityHelper {
             manufacturer.contains("vivo") -> OemInstruction(
                 title = "Vivo Settings",
                 steps = listOf(
-                    "1. Settings → Battery → High background power consumption → Heart Monitor → ON",
-                    "2. Settings → More settings → Apps → Auto start → Heart Monitor → ON",
-                    "3. i Manager → App manager → Autostart manager → Heart Monitor → ON"
+                    "1. Settings > Battery > High background power consumption > Heart Monitor > ON",
+                    "2. Settings > More settings > Apps > Auto start > Heart Monitor > ON",
+                    "3. i Manager > App manager > Autostart manager > Heart Monitor > ON"
                 ),
                 settingsIntent = createVivoAutoStartIntent()
             )
@@ -106,8 +106,8 @@ object OemCompatibilityHelper {
             else -> OemInstruction(
                 title = "Battery Settings",
                 steps = listOf(
-                    "1. Settings → Battery → Heart Monitor → Select 'No background restriction'",
-                    "2. Settings → Apps → Heart Monitor → Battery → Select 'Unrestricted'"
+                    "1. Settings > Battery > Heart Monitor > Select 'No background restriction'",
+                    "2. Settings > Apps > Heart Monitor > Battery > Select 'Unrestricted'"
                 )
             )
         }
