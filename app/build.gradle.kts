@@ -29,6 +29,13 @@ configurations.all {
     resolutionStrategy {
         force("androidx.core:core-ktx:1.13.1")
         force("androidx.core:core:1.13.1")
+        // A transitive dependency drags in a fragment older than 1.3.0, which is
+        // the version that made registerForActivityResult safe to use from an
+        // activity. MainActivity registers two launchers that way, and lint fails
+        // the build over it. Nothing here uses fragments directly; this only
+        // raises the floor of the one that arrives uninvited.
+        force("androidx.fragment:fragment:1.8.5")
+        force("androidx.fragment:fragment-ktx:1.8.5")
     }
 }
 

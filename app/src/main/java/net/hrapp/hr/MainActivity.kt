@@ -459,10 +459,18 @@ class MainActivity : ComponentActivity() {
                     connectionState = ConnectionState.DISCONNECTED
                 },
                 onEnableBluetooth = {
-                    val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                    try {
-                        context.startActivity(enableBtIntent)
-                    } catch (e: Exception) {
+                    // ACTION_REQUEST_ENABLE needs BLUETOOTH_CONNECT from API 31 on.
+                    // Without it startActivity throws SecurityException, so check
+                    // first, and catch SecurityException rather than Exception so it
+                    // is clear which failure is being handled. The Bluetooth settings
+                    // screen needs no permission and is the fallback for both paths.
+                    if (PermissionHelper.isBluetoothPermissionGranted(context)) {
+                        try {
+                            context.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                        } catch (e: SecurityException) {
+                            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                        }
+                    } else {
                         context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                     }
                 },
