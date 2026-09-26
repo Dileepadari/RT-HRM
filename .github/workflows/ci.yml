@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  server:
+    name: PHP server
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-password
+          MYSQL_DATABASE: heart_rate_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      HR_DB_HOST: 127.0.0.1
+      HR_DB_PORT: 3306
+      HR_DB_NAME: heart_rate_db
+      HR_DB_USER: root
+      HR_DB_PASS: ci-root-password
+      HR_API_KEY: ci-only-key-not-a-secret
+      HR_ALLOWED_DEVICES: F0:13:C3:11:22:33
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+
+      - name: Lint every PHP file
+        run: |
+          fail=0
+          for f in $(git ls-files '*.php'); do
+            php -l "$f" > /dev/null || { echo "syntax error in $f"; fail=1; }
+          done
+          exit $fail
+
+      - name: Load the schema
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -pci-root-password < server/schema.sql
+
+      # The gate test needs the endpoints to have something to return, or a 200
+      # and a 500 would be indistinguishable from a 401 assertion's point of view.
+      - name: Seed readings
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -pci-root-password heart_rate_db <<'SQL'
+          INSERT INTO heart_rate_logs (device_id, heart_rate, sensor_contact, battery_level, recorded_at)
+          SELECT 'F0:13:C3:11:22:33', 60 + (n % 40), 1, 90, NOW(3) - INTERVAL n SECOND
+          FROM (SELECT a.N + b.N * 10 + c.N * 100 AS n
+                FROM (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+                      UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) a
+                CROSS JOIN (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4
+                      UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) b
+                CROSS JOIN (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) c
+               ) nums;
+          INSERT INTO bradycardia_episodes
+            (device_id, status, started_at, ended_at, duration_seconds, reading_count,
+             min_hr, max_hr, avg_hr, hr_sum, recovery_hr, recovery_at)
+          VALUES
+            ('F0:13:C3:11:22:33', 'completed', NOW() - INTERVAL 2 HOUR,
+             NOW() - INTERVAL 2 HOUR + INTERVAL 20 SECOND, 20, 20, 46, 49, 47.5, 950, 54,
+             NOW() - INTERVAL 2 HOUR + INTERVAL 26 SECOND);
+          SQL
+
+      # Nine read endpoints once answered anyone who knew the URL. This asserts
+      # over real HTTP that they no longer do, and that the key still works.
+      - name: Access gate
+        run: server/tests/http-gate-test.sh
+
+  hygiene:
+    name: Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tripwires
+        run: ops/hygiene.sh
+
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # This job is the point of removing org.gradle.java.home: the build has to
+      # work somewhere other than one laptop. It also builds without
+      # google-services.json, which is gitignored, so a fresh clone is covered.
+      - name: Assemble and lint
+        run: ./gradlew assembleDebug lint --no-daemon
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-*.html
+          if-no-files-found: ignore

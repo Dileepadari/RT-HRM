@@ -1,10 +1,10 @@
 > **Language:** **English** | [Hindi (हिंदी)](README_HI.md)
 
 <div align="center">
-  
+
 # Real-Time Heart Rate Monitor
 
-**A comprehensive, real-time BLE heart rate monitoring solution featuring an Android application and a PHP-based web dashboard.**
+**A BLE heart rate monitor: an Android app that reads the sensor, and a PHP dashboard that shows it live.**
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
@@ -13,123 +13,132 @@
 ![PHP](https://img.shields.io/badge/PHP-%23777BB4.svg?style=for-the-badge&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-%234479A1.svg?style=for-the-badge&logo=mysql&logoColor=white)
 ![Chart.js](https://img.shields.io/badge/Chart.js-%23FF6384.svg?style=for-the-badge&logo=chartdotjs&logoColor=white)
+<br>
+![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
 </div>
 
 ---
 
-## 📌 Overview
+## Overview
 
-This project consists of an Android application that collects real-time heart rate data via Bluetooth Low Energy (BLE) sensors (such as Polar, Garmin, Wahoo TICKR) and a PHP server that provides a live monitoring web dashboard, historical data storage, and analytics.
+An Android app reads heart rate from a Bluetooth Low Energy chest strap or armband (Polar, Garmin, Wahoo TICKR and anything else speaking the standard BLE Heart Rate Profile) and posts each reading to a PHP server. The server stores the history, detects arrhythmia and bradycardia episodes, and serves a live web dashboard.
+
+> [!IMPORTANT]
+> The read endpoints and the dashboard now require a credential. Earlier versions served live and historical heart rate to anyone who knew the URL. See [Access control](#access-control).
 
 ---
 
-## 📸 Application Previews
+## The dashboard
 
-<div align="center">
-  
-| Live Monitoring | Analytics & Stats | Hourly Trends |
+| Live | History | Anomalies |
+|:---:|:---:|:---:|
+| <img src="screenshots/dashboard_live.jpg" alt="Live dashboard showing current BPM, battery, contact and a rolling chart"/> | <img src="screenshots/dashboard_history.jpg" alt="History tab with per-minute min, average and max, and a 24 hour hourly average"/> | <img src="screenshots/dashboard_anomalies.jpg" alt="Anomalies tab listing bradycardia episodes with duration, minimum heart rate and recovery"/> |
+
+Live heart rate with RR intervals, per-minute and hourly aggregates over any window from one hour to a month, and a sortable, filterable log of every detected episode. English and Hindi.
+
+## The app
+
+| Live Monitoring | Analytics and Stats | Hourly Trends |
 |:---:|:---:|:---:|
 | <img src="screenshots/01_live_heart_rate.jpg" width="250" alt="Live Heart Rate"/> | <img src="screenshots/02_graphs_daily_stats.jpg" width="250" alt="Charts and Statistics"/> | <img src="screenshots/03_hourly_charts.jpg" width="250" alt="Hourly Charts"/> |
 
-| Comprehensive Summary | Record Logs | Device Configurations |
+| Summary | Record Logs | Device Configuration |
 |:---:|:---:|:---:|
 | <img src="screenshots/04_hourly_summary.jpg" width="250" alt="Hourly Summary"/> | <img src="screenshots/05_all_records.jpg" width="250" alt="All Records"/> | <img src="screenshots/06_device_mode_settings.jpg" width="250" alt="Device Mode"/> |
 
-</div>
+---
+
+## Features
+
+### Acquisition
+- Standard BLE Heart Rate Profile, so most straps work without configuration.
+- Automatic reconnection, battery level, and skin-contact reporting.
+- Beat-to-beat RR intervals, not just the averaged BPM.
+
+### Analysis
+- Live heart rate and an RR-derived interval chart.
+- Daily minimum, average and maximum, plus per-minute and hourly aggregation.
+- Arrhythmia detection (atrial fibrillation, tachycardia, bradycardia, PVC, PAC, SVT) with a confidence score, and bradycardia episodes tracked from onset to recovery.
+- HRV-based signal quality, used to discard sensor artifacts.
+
+### Server
+- JSON endpoints for the app to write to and the dashboard to read from.
+- Server-Sent Events for live updates without polling.
+- The app caches locally and syncs when connectivity returns.
+
+### Alerts and modes
+- Threshold alerts with sound and vibration.
+- Server mode (this device wears the sensor) or client mode (this device only watches).
+- A foreground service with per-manufacturer battery-optimisation guidance, because staying alive in the background is where these apps usually die.
 
 ---
 
-## ✨ Core Features
+## Requirements
 
-### Data Acquisition & Connectivity
-- **BLE Compatibility:** Seamlessly integrates with standard BLE HR Profile sensors.
-- **Smart Connection:** Automatic reconnection, battery tracking, and sensor skin-contact verification.
-- **Precision Metrics:** Beat-to-beat (RR) interval monitoring.
+**App:** Android 8.0 (API 26) or newer, BLE hardware, and the Bluetooth, location (Android requires it for BLE scanning) and notification permissions.
 
-### Deep Analytics & UI
-- **Live Visualizations:** Real-time heart rate and ECG-style RR interval charts.
-- **Robust Statistics:** Daily summaries (Min/Avg/Max) and detailed hourly data aggregation.
-- **Signal Integrity:** HRV-based signal quality calculation for artifact detection.
-
-### Server & Synchronization
-- **RESTful Architecture:** Secure API endpoints for structured data synchronization.
-- **Offline Resilience:** Local data caching and background syncing when connectivity is restored.
-- **Web Dashboard:** Server-Sent Events (SSE) provide instant, live telemetry updates on the web client.
-
-### Alerts & Modes
-- **Threshold Alerts:** Customizable boundary alerts with system sounds and vibrations.
-- **Dual Device Modes:** Run as a "Server" (data collector) or "Client" (live WebView monitor).
-- **Service Resilience:** Foreground service designed with OEM-specific battery optimization workarounds.
+**Server:** PHP 8.1 or newer, MySQL 8.0 / MariaDB 10.6 or newer, Apache or nginx.
 
 ---
 
-## 🛠️ System Requirements
+## Setup
 
-### Mobile Application
-- **OS:** Android 8.0 (API 26) or higher.
-- **Hardware:** BLE-capable Android device.
-- **Permissions:** Bluetooth, Fine Location (for BLE scanning), and Notifications.
+### 1. The server
 
-### Backend Infrastructure
-- **Server:** PHP 8.1+
-- **Database:** MySQL 8.0+ or MariaDB 10.6+
-- **Web Server:** Apache or Nginx
+```bash
+git clone https://github.com/Dileepadari/RT-HRM.git
+cd RT-HRM
+cp -r server/ /var/www/html/hr/
+mysql -u root -p < server/schema.sql
+```
 
----
+Then configure it:
 
-## 🚀 Installation & Setup
+```bash
+cd /var/www/html/hr/
+cp .env.example .env
+$EDITOR .env
+```
 
-### Phase 1: Server Configuration (PHP Backend)
+`HR_API_KEY` is the shared secret between the app and the server, and it is also the dashboard password. Set it to something you would not mind being the only thing between a stranger and a record of your heartbeat. `HR_ALLOWED_DEVICES` is a comma-separated list of the sensor MAC addresses you want accepted.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Dileepadari/RT-HRM.git
-   cd realtime-heart-rate-monitor
-   ```
+The dashboard lives at `live.php` under wherever you put the folder, and finds its own API path from there, so `/hr/`, `/monitoring/hr2/` and a domain root all work without editing anything.
 
-2. **Deploy to your web directory:**
-   ```bash
-   cp -r server/ /var/www/html/hr/
-   ```
+### 2. The app
 
-3. **Initialize Database:**
-   ```bash
-   mysql -u root -p < server/schema.sql
-   ```
-   *This initializes the `heart_rate_db` database and necessary relational tables (`heart_rate_logs`, `heart_rate_alerts`, `heart_rate_stats`).*
+Build it:
 
-4. **Environment Variables:**
-   Configure your secure variables in the `.env` file:
-   ```bash
-   cd /var/www/html/hr/
-   cp .env.example .env
-   nano .env
-   ```
-   *Required variables include `HR_DB_HOST`, `HR_DB_NAME`, `HR_DB_USER`, `HR_DB_PASS`, `HR_API_KEY`, and `HR_ALLOWED_DEVICES`.*
+```bash
+./gradlew assembleDebug
+```
 
-5. **Verify Installation:**
-   Navigate to `https://your-server.com/hr/live.php`. If configured correctly, the dashboard will display (initially showing "No data").
+You need a JDK 17 or newer to run Gradle. The project's Java version is declared as a toolchain, so Gradle will resolve or download the compiler it needs.
 
-### Phase 2: Android Application Setup
+Crash reporting is optional. Drop your own `google-services.json` into `app/` and Firebase Crashlytics is applied automatically; without it the app builds and runs with crash reporting switched off.
 
-1. **Build and Install:**
-   Download the compiled `hr.apk` release, or compile from source:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-
-2. **Application Configuration:**
-   - Launch the application and open **Settings**.
-   - Navigate to **Server Settings** and define your **API URL** (e.g., `https://your-server.com/hr/api/log.php`) and your secure **API Key**.
-   - Select **Server Mode** if this device is wearing the sensor, or **Client Mode** to just monitor.
-   - Connect your BLE sensor via the main interface.
+Then open **Settings** in the app, set the **API URL** (`https://your-server/hr/api/log.php`) and the same **API Key**, choose server or client mode, and connect your sensor.
 
 ---
 
-## 📡 API Reference
+## Access control
 
-### Data Transmission (Android to Server)
+Every read endpoint and the dashboard require one of:
+
+- the API key in an `X-API-Key` header, which is what the app sends, or
+- a dashboard session, which you get by entering the API key at `live.php`.
+
+The key is accepted in the header only. It used to be read from the query string as well, which put it into the web server's access log, into any `Referer` sent to a third party, and into the browser history of anyone who opened the URL.
+
+To go back to open access, set `HR_PUBLIC_READ=1`. Be aware of what that publishes: a continuous record of one identifiable person's heart rate, their arrhythmia episodes, and by implication when they are asleep, exercising or not at home.
+
+`server/tests/http-gate-test.sh` asserts all of this over real HTTP, and CI runs it on every push.
+
+---
+
+## API
+
+### Writing (app to server)
 
 ```http
 POST /api/log.php
@@ -146,38 +155,38 @@ X-API-Key: {YOUR_API_KEY}
 }
 ```
 
-### Data Retrieval Endpoints (GET)
+### Reading
 
-| Endpoint | Description |
-|----------|-------------|
-| `/api/latest.php` | Retrieves the most recent heart rate telemetry. |
-| `/api/chart-data.php?seconds=60` | Retrieves chart plotting data for the last *N* seconds. |
-| `/api/minute-summary.php?hours=1` | Retrieves per-minute averages over the last *N* hours. |
-| `/api/sse.php` | Initiates a real-time Server-Sent Events stream. |
-| `/api/history.php` | Retrieves aggregated hourly statistics. |
-| `/api/alerts.php` | Retrieves historical threshold violation alerts. |
-
----
-
-## ⚙️ Technical Architecture
-
-- **Language:** Kotlin
-- **UI Framework:** Jetpack Compose
-- **Network Client:** Ktor
-- **Architecture Pattern:** Single Activity + Compose Navigation
-- **SDK Targets:** Min 26, Target 35
+| Endpoint | Returns |
+|----------|---------|
+| `/api/latest.php` | The most recent reading. |
+| `/api/latest-all.php` | The most recent reading per device. |
+| `/api/chart-data.php?seconds=60` | Plot points for the last N seconds. |
+| `/api/minute-summary.php?hours=1` | Per-minute min, average and max over N hours. |
+| `/api/today-count.php` | Today's reading count with min, average and max. |
+| `/api/arrhythmia.php?hours=24` | Detected arrhythmia events. |
+| `/api/episodes.php` | Bradycardia episodes, with paging and sorting. |
+| `/api/sse.php`, `/api/sse-all.php` | Live Server-Sent Events streams. |
+| `/api/history.php` | Hourly aggregates. Requires the API key header. |
+| `/api/alerts.php` | Past threshold alerts. Requires the API key header. |
 
 ---
 
-## 📄 License
+## Architecture
 
-This project is licensed under the **MIT License**.
+Kotlin, Jetpack Compose, Ktor, a single activity with Compose navigation, min SDK 26 and target SDK 35, against PHP 8 and MySQL. [DEVDOC.md](DEVDOC.md) has the module layout, the data flow from sensor to chart, and the things worth knowing before changing any of it.
 
 ---
 
-## ⚠️ Disclaimer
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+---
+
+## Disclaimer
 
 > [!WARNING]
-> **Not a Medical Device**
-> 
-> This application is intended for informational and personal use only. The ECG-style charts are representative visualizations derived from standard beat intervals and are not authentic electrocardiograms. Do not use this data for medical diagnoses, treatments, or health-critical decisions. Always consult a qualified healthcare professional. The developers assume no liability for consequences arising from the use of this software.
+> **Not a medical device.**
+>
+> This is for personal and informational use. The interval charts are drawn from beat-to-beat timings and are not electrocardiograms, and the arrhythmia detection is a heuristic over RR intervals, not a diagnosis. Do not make medical decisions with it. Consult a qualified healthcare professional. The authors accept no liability for any consequence of using this software.
