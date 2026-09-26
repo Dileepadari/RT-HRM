@@ -51,7 +51,7 @@ try {
         $params[] = $severity;
     }
 
-    // 50% and below reliability → hide (high false positive risk, unnecessary stress)
+    // 50% and below reliability -> hide (high false positive risk, unnecessary stress)
     $sql .= " AND confidence > 50";
 
     $sql .= " ORDER BY created_at DESC LIMIT ?";

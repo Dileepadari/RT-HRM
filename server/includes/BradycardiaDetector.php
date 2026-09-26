@@ -45,14 +45,14 @@ class BradycardiaDetector
         }
 
         if ($heartRate < self::THRESHOLD) {
-            // HR low — start or expand episode
+            // HR low - start or expand episode
             if ($active) {
                 return $this->extendEpisode($active, $heartRate, $recordedAt);
             } else {
                 return $this->startEpisode($deviceId, $heartRate, $recordedAt);
             }
         } else {
-            // HR normal — close active episode if exists
+            // HR normal - close active episode if exists
             if ($active) {
                 return $this->completeEpisode($active, $heartRate, $recordedAt);
             }

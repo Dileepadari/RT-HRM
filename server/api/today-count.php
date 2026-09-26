@@ -1,6 +1,6 @@
 <?php
 /**
- * GET /hr2/api/today-count.php?device=MAC
+ * GET <base>/api/today-count.php?device=MAC
  * Return today's reading count and statistics of a specific device
  */
 

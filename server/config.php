@@ -20,6 +20,9 @@ if (file_exists($envFile)) {
 // Database (read from environment variables)
 define('DB_HOST', getenv('HR_DB_HOST') ?: 'localhost');
 define('DB_NAME', getenv('HR_DB_NAME') ?: 'heart_rate_db');
+// The DSN hardcoded the default port, so a MySQL on any other port could not
+// be reached without editing this file.
+define('DB_PORT', getenv('HR_DB_PORT') ?: '3306');
 define('DB_USER', getenv('HR_DB_USER') ?: 'root');
 define('DB_PASS', getenv('HR_DB_PASS') ?: '');
 
@@ -41,7 +44,7 @@ function getDB(): PDO {
     static $pdo = null;
 
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+        $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -180,18 +183,18 @@ const DEVICE_PROFILES = [
         'prefix'      => 'F0:13:C3',
         'type'        => 'wahoo',
         'name'        => 'Wahoo TICKR Fit',
-        'short'       => 'WTF',
+        'short'       => 'TICKR',
         'artifact_hr' => null,
     ],
 ];
 
-/** Match MAC → profile (prefix match) */
+/** Match MAC -> profile (prefix match) */
 function getDeviceProfile(string $mac): array {
     $mac = strtoupper($mac);
     foreach (DEVICE_PROFILES as $p) {
         if (str_starts_with($mac, $p['prefix'])) return $p;
     }
-    // Unknown device — safe default
+    // Unknown device - safe default
     return ['prefix' => '', 'type' => 'unknown', 'name' => $mac, 'short' => '???', 'artifact_hr' => null];
 }
 
@@ -240,7 +243,7 @@ function getAllActiveDevices(): array {
     $allowed = getAllowedDeviceList();
     if (empty($allowed)) return [];
 
-    // ORDER BY id DESC LIMIT 1 for each device — PK lookup, instant
+    // ORDER BY id DESC LIMIT 1 for each device - PK lookup, instant
     $unions = [];
     $params = [];
     foreach ($allowed as $mac) {

@@ -248,7 +248,7 @@ class ArrhythmiaDetector
         // False-positive filter: BLE device on connection loss / reconnect sends
         // a fixed (flat) HR value (e.g. flat 30 BPM, sometimes in transition [41,30,30,...]).
         // In true bradycardia, heartbeat shows natural variation (at least 4-5 unique values).
-        // 3 or fewer unique values in 15 samples → device artifact.
+        // 3 or fewer unique values in 15 samples -> device artifact.
         $uniqueCount = count(array_unique($window));
         if ($uniqueCount <= 3) return null;
 
@@ -321,8 +321,8 @@ class ArrhythmiaDetector
     /**
      * AF Suspect - very high HR variability (irregular rhythm)
      *
-     * In normal sinus rhythm, consecutive HR values change gradually (62→63→64).
-     * In AF, random jumps are observed (62→78→55→91).
+     * In normal sinus rhythm, consecutive HR values change gradually (62 -> 63 -> 64).
+     * In AF, random jumps are observed (62 -> 78 -> 55 -> 91).
      *
      * Metrics (Dash et al. 2009: 94.4% sensitivity, 95.1% specificity):
      * - CV > 15% (Tateno & Glass 2001 - dimensionless, transferable between HR/RR domains)
@@ -374,7 +374,7 @@ class ArrhythmiaDetector
     /**
      * SVT Suspect - Sudden HR jump, very high and regular
      *
-     * SVT: HR normal in previous 15s → suddenly >150 BPM + regular
+     * SVT: HR normal in previous 15s -> suddenly >150 BPM + regular
      * Source: claude.md (sudden onset > 40 BPM), StatPearls SVT (HR > 150 BPM),
      *         ICD discrimination algorithms (Guidant/Ventak: 9% RR variation)
      *

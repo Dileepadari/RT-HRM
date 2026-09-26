@@ -138,7 +138,7 @@ function __($key) {
 }
 
 
-// v2: Primary device selection — always prefer active device
+// v2: Primary device selection - always prefer active device
 $allActiveDevices = getAllActiveDevices();
 $activeMacs = array_column($allActiveDevices, 'mac');
 $primaryMac = $_COOKIE['hr_primary_mac'] ?? $_GET['device'] ?? null;
@@ -1449,6 +1449,12 @@ foreach (array_reverse($hourlySummary) as $row) {
         }
     </style>
     <script>
+    // Every endpoint below used to be fetched from an absolute path naming the
+    // one directory this happened to be deployed under. Served from anywhere
+    // else the page still rendered, but every fetch 404'd: empty charts, no
+    // episodes, and a badge stuck on Disconnected even with a live reading.
+    // Derived from the page's own location instead, so it follows the folder.
+    const API_BASE = window.location.pathname.replace(/\/[^\/]*$/, '') + '/api';
     // ===== i18n: Multi-language Support =====
     const translations = {
         hi: {
@@ -1510,10 +1516,10 @@ foreach (array_reverse($hourlySummary) as $row) {
             apply: 'लागू करें',
             time_range_preview: '{start} - {end} ({hours} घंटे)',
             // Time indicator
-            go_live: '🔴 लाइव जाएँ',
-            swipe_hint: '← अभी | अतीत →',
+            go_live: 'लाइव जाएँ',
+            swipe_hint: '&lt; अभी | अतीत &gt;',
             // Range slider
-            range_title: '🎚️ समय सीमा चयन',
+            range_title: 'समय सीमा चयन',
             selected_duration: 'चयनित: {duration}',
             duration_sec: '{s} सेकंड',
             duration_min_sec: '{m} मिनट {s} सेकंड',
@@ -1634,9 +1640,9 @@ foreach (array_reverse($hourlySummary) as $row) {
             end_time_now: 'Now',
             apply: 'Apply',
             time_range_preview: '{start} - {end} ({hours} hours)',
-            go_live: '🔴 Go Live',
-            swipe_hint: '← Now | Past →',
-            range_title: '🎚️ Time Range Selection',
+            go_live: 'Go Live',
+            swipe_hint: '&lt; Now | Past &gt;',
+            range_title: 'Time Range Selection',
             selected_duration: 'Selected: {duration}',
             duration_sec: '{s} seconds',
             duration_min_sec: '{m} min {s} sec',
@@ -1817,7 +1823,7 @@ foreach (array_reverse($hourlySummary) as $row) {
                 <span class="device-select-btn dev-<?= $dType ?> <?= $isActive ? 'active' : '' ?>"
                       data-mac="<?= $mac ?>" data-type="<?= $dType ?>"
                       onclick="window._setPrimary('<?= $mac ?>')">
-                    <?= $dType === 'pvs' ? '🔵' : '🟠' ?> <?= $dShort ?> <?= $isActive ? '●' : '○' ?>
+                    <?= $dShort ?> <?= $isActive ? '●' : '○' ?>
                 </span>
                 <?php endforeach; ?>
             </div>
@@ -1931,8 +1937,8 @@ foreach (array_reverse($hourlySummary) as $row) {
                     <!-- Time Indicator (for scrolling) -->
                     <div id="timeIndicator" class="time-indicator" style="display: none;">
                         <span class="time-text"></span>
-                        <button id="goLiveBtn" class="go-live-btn" data-i18n="go_live">🔴 Go Live</button>
-                        <span class="swipe-hint" data-i18n="swipe_hint">← Now | Past →</span>
+                        <button id="goLiveBtn" class="go-live-btn" data-i18n="go_live">Go Live</button>
+                        <span class="swipe-hint" data-i18n="swipe_hint">&lt; Now | Past &gt;</span>
                     </div>
 
                     <!-- Grafik Statisticsi -->
@@ -1969,10 +1975,10 @@ foreach (array_reverse($hourlySummary) as $row) {
                     <!-- Range Slider (for large time ranges) -->
                     <div id="rangeSliderContainer" class="range-slider-container" style="display: none;">
                         <div class="range-slider-header">
-                            <h4 data-i18n="range_title">🎚️ Time Range Selection</h4>
+                            <h4 data-i18n="range_title">Time Range Selection</h4>
                             <div class="range-slider-times">
                                 <span class="start-time" id="sliderStartTime">--:--</span>
-                                <span>→</span>
+                                <span>-</span>
                                 <span class="end-time" id="sliderEndTime">--:--</span>
                             </div>
                         </div>
@@ -2205,7 +2211,7 @@ foreach (array_reverse($hourlySummary) as $row) {
                     </div>
                     <div id="epDateRange" style="display:none; margin-top:8px; gap:8px; align-items:center; flex-wrap:wrap;">
                         <input type="date" id="epDateFrom" class="ep-date-input" max="<?= date('Y-m-d') ?>">
-                        <span style="color: #6b7280;">—</span>
+                        <span style="color: #6b7280;">-</span>
                         <input type="date" id="epDateTo" class="ep-date-input" max="<?= date('Y-m-d') ?>" value="<?= date('Y-m-d') ?>">
                         <button class="time-btn" onclick="loadEpisodesByDate()" style="padding:6px 16px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg></button>
                     </div>
@@ -2323,6 +2329,7 @@ foreach (array_reverse($hourlySummary) as $row) {
     <!-- Charts -->
     <?php if ($activeTab === 'live'): ?>
     <script>
+
     // Chart.js Crosshair Plugin (inline)
     const crosshairPlugin = {
         id: 'crosshair',
@@ -2524,7 +2531,7 @@ foreach (array_reverse($hourlySummary) as $row) {
                             color: 'rgba(0, 255, 0, 0.6)',
                             maxTicksLimit: 5,
                             callback: (val) => {
-                                // Unix timestamp (ms) → HH:mm:ss.mmm format
+                                // Unix timestamp (ms) -> HH:mm:ss.mmm format
                                 const d = new Date(val);
                                 const h = d.getHours().toString().padStart(2, '0');
                                 const m = d.getMinutes().toString().padStart(2, '0');
@@ -2557,7 +2564,7 @@ foreach (array_reverse($hourlySummary) as $row) {
         const now = Date.now();
         if (now - lastChartLoad < CHART_THROTTLE) return;
         lastChartLoad = now;
-        let url = '/hr2/api/chart-data.php?device=' + encodeURIComponent(_primaryMac) + '&';
+        let url = API_BASE + '/chart-data.php?device=' + encodeURIComponent(_primaryMac) + '&';
 
         if (customStart && customEnd) {
             // Custom time range (Unix timestamp)
@@ -2881,7 +2888,7 @@ foreach (array_reverse($hourlySummary) as $row) {
 
     function startPolling() {
         // Fetch initial data first, then connect to SSE
-        fetch('/hr2/api/latest-all.php')
+        fetch(API_BASE + '/latest-all.php')
             .then(function(r) { return r.json(); })
             .then(function(json) {
                 if (json.success && json.devices) {
@@ -2917,7 +2924,7 @@ foreach (array_reverse($hourlySummary) as $row) {
     function _connectSSE() {
         if (_evtSource) { _evtSource.close(); _evtSource = null; }
 
-        _evtSource = new EventSource('/hr2/api/sse-all.php');
+        _evtSource = new EventSource(API_BASE + '/sse-all.php');
 
         _evtSource.addEventListener('connected', function(e) {
             var data = JSON.parse(e.data);
@@ -3010,14 +3017,14 @@ foreach (array_reverse($hourlySummary) as $row) {
         if (!isOffline) {
             checkArrhythmias();
         } else {
-            // Offline cihaz — ritim badge'ini gizle
+            // Offline cihaz - ritim badge'ini gizle
             var rhythmEl = document.getElementById('rhythmStatus');
             if (rhythmEl) rhythmEl.style.display = 'none';
         }
     };
 
     function _loadTodayCount(mac) {
-        fetch('/hr2/api/today-count.php?device=' + encodeURIComponent(mac))
+        fetch(API_BASE + '/today-count.php?device=' + encodeURIComponent(mac))
             .then(function(r) { return r.json(); })
             .then(function(json) {
                 if (json.success) {
@@ -3045,12 +3052,11 @@ foreach (array_reverse($hourlySummary) as $row) {
             var p = _deviceProfiles[mac] || {type:'unknown',short:'???'};
             var type = p.type;
             var shortName = p.short;
-            var icon = type === 'pvs' ? '🔵' : '🟠';
             var isActive = (mac === _primaryMac);
             var offlineClass = (d && d.seconds_ago > 10) ? ' offline' : '';
             html += '<span class="device-select-btn dev-' + type + (isActive ? ' active' : '') + offlineClass + '"'
                   + ' data-mac="' + mac + '" onclick="window._setPrimary(\'' + mac + '\')">'
-                  + icon + ' ' + shortName + ' ' + (isActive ? '●' : '○')
+                  + shortName + ' ' + (isActive ? '●' : '○')
                   + '</span>';
         });
         el.innerHTML = html;
@@ -3131,7 +3137,7 @@ foreach (array_reverse($hourlySummary) as $row) {
 
     async function checkArrhythmias() {
         try {
-            const response = await fetch('/hr2/api/arrhythmia.php?hours=1&limit=5&device_id=' + encodeURIComponent(_primaryMac));
+            const response = await fetch(API_BASE + '/arrhythmia.php?hours=1&limit=5&device_id=' + encodeURIComponent(_primaryMac));
             const json = await response.json();
             if (!json.success) return;
             renderRhythmStatus(json.events || []);
@@ -3178,7 +3184,7 @@ foreach (array_reverse($hourlySummary) as $row) {
         }
 
         // Show BPM in tab title
-        document.title = `\u2764\uFE0F ${d.heart_rate} BPM`;
+        document.title = `${d.heart_rate} BPM`;
 
         // HR value
         const hrValueEl = document.querySelector('.hr-value');
@@ -3200,7 +3206,7 @@ foreach (array_reverse($hourlySummary) as $row) {
             }
         }
 
-        // Last update — how many seconds ago
+        // Last update - how many seconds ago
         const lastUpdateEl = document.querySelector('.last-update');
         if (lastUpdateEl) {
             var ago = d.seconds_ago || 0;
@@ -3228,7 +3234,7 @@ foreach (array_reverse($hourlySummary) as $row) {
     }
 
     function showHRCardOffline(d) {
-        document.title = '⏸ ' + t('dev_no_connection');
+        document.title = t('dev_no_connection');
 
         const hrValueEl = document.querySelector('.hr-value');
         if (hrValueEl) { hrValueEl.textContent = '--'; hrValueEl.style.opacity = '0.3'; }
@@ -3265,16 +3271,23 @@ foreach (array_reverse($hourlySummary) as $row) {
         if (rhythmEl) rhythmEl.style.display = 'none';
     }
 
-    // Pause/Play toggle
+    // Pause/Play toggle.
+    // These were assigned with textContent, which does not parse markup: the
+    // button rendered the SVG source as visible text the moment you paused and
+    // resumed. innerHTML below, and the play state is an icon rather than the
+    // emoji it used to be.
+    const PAUSE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    const PLAY_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="7,4 20,12 7,20"/></svg>';
+
     function togglePause() {
         isPaused = !isPaused;
         const btn = document.getElementById('pauseBtn');
         if (isPaused) {
-            btn.textContent = '▶️';
+            btn.innerHTML = PLAY_ICON;
             btn.classList.add('paused');
             btn.title = t('resume_title');
         } else {
-            btn.textContent = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            btn.innerHTML = PAUSE_ICON;
             btn.classList.remove('paused');
             btn.title = t('pause_title');
             // Immediately update when resuming
@@ -3360,15 +3373,15 @@ foreach (array_reverse($hourlySummary) as $row) {
         if (customStart && customEnd) return;
 
         // Scroll logic (dragging content):
-        // Swipe right (finger left to right) → go to History
-        // Swipe left (finger right to left) → come back to Present
+        // Swipe right (finger left to right) -> go to History
+        // Swipe left (finger right to left) -> come back to Present
         if (deltaX > 0) {
-            // Swipe right → go to History
+            // Swipe right -> go to History
             selectedTimeAgo += stepSize;
             isPaused = true;
             updatePauseButton();
         } else {
-            // Swipe left → come back toward Present
+            // Swipe left -> come back toward Present
             selectedTimeAgo = Math.max(0, selectedTimeAgo - stepSize);
             if (selectedTimeAgo === 0) {
                 isPaused = false;
@@ -3383,11 +3396,11 @@ foreach (array_reverse($hourlySummary) as $row) {
     function updatePauseButton() {
         const btn = document.getElementById('pauseBtn');
         if (isPaused) {
-            btn.textContent = '▶️';
+            btn.innerHTML = PLAY_ICON;
             btn.classList.add('paused');
             btn.title = t('resume_title');
         } else {
-            btn.textContent = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            btn.innerHTML = PAUSE_ICON;
             btn.classList.remove('paused');
             btn.title = t('pause_title');
         }
@@ -3585,7 +3598,7 @@ foreach (array_reverse($hourlySummary) as $row) {
         async function loadMinuteData(hours) {
             try {
                 const _device = localStorage.getItem('hr_primary_mac') || '<?= addslashes($primaryMac) ?>';
-                const response = await fetch(`/hr2/api/minute-summary.php?hours=${hours}&device=${encodeURIComponent(_device)}`);
+                const response = await fetch(`${API_BASE}/minute-summary.php?hours=${hours}&device=${encodeURIComponent(_device)}`);
                 const json = await response.json();
 
                 if (json.success && json.data && minuteChart) {
@@ -3783,7 +3796,7 @@ foreach (array_reverse($hourlySummary) as $row) {
 
     function _buildEpUrl(offset) {
         const _epDevice = localStorage.getItem('hr_primary_mac') || '<?= addslashes($primaryMac) ?>';
-        let url = `/hr2/api/episodes.php?min_duration=5&limit=${EP_API_LIMIT}&offset=${offset}&device_id=${encodeURIComponent(_epDevice)}`;
+        let url = `${API_BASE}/episodes.php?min_duration=5&limit=${EP_API_LIMIT}&offset=${offset}&device_id=${encodeURIComponent(_epDevice)}`;
         url += `&sort=${epSortField}&sort_dir=${epSortDir}`;
         if (epDateMode) {
             url += `&date_from=${epDateFrom}&date_to=${epDateTo}`;
@@ -3960,7 +3973,7 @@ foreach (array_reverse($hourlySummary) as $row) {
         const totalPages = Math.ceil(currentEpisodes.length / EP_PER_PAGE);
         const nextPage = epCurrentPage + dir;
 
-        // Forward clicked on last page and more data on server → auto-load
+        // Forward clicked on last page and more data on server -> auto-load
         if (dir > 0 && nextPage >= totalPages && epHasMore) {
             epPageChanging = true;
             await loadMoreEpisodes();
@@ -4009,7 +4022,7 @@ foreach (array_reverse($hourlySummary) as $row) {
             : Math.floor(Date.now() / 1000) + 10;
 
         try {
-            const response = await fetch(`/hr2/api/chart-data.php?start=${startTs}&end=${endTs}`);
+            const response = await fetch(`${API_BASE}/chart-data.php?start=${startTs}&end=${endTs}`);
             const json = await response.json();
             if (!json.success || !json.data) return;
 
@@ -4018,7 +4031,7 @@ foreach (array_reverse($hourlySummary) as $row) {
             const epDate = new Date(startedAt.replace(' ', 'T'));
             const dateStr = `${String(epDate.getDate()).padStart(2,'0')}.${String(epDate.getMonth()+1).padStart(2,'0')}.${epDate.getFullYear()} ${String(epDate.getHours()).padStart(2,'0')}:${String(epDate.getMinutes()).padStart(2,'0')}`;
             document.getElementById('episodeChartTitle').textContent =
-                t('ep_chart_title').replace('{id}', episodeId) + ` — ${dateStr}`;
+                t('ep_chart_title').replace('{id}', episodeId) + ` - ${dateStr}`;
 
             updateEpNavButtons();
 

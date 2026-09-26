@@ -1,7 +1,7 @@
 <?php
 /**
  * Returns latest HR data of all active devices
- * GET /hr2/api/latest-all.php
+ * GET <base>/api/latest-all.php
  */
 
 header('Content-Type: application/json; charset=utf-8');

@@ -12,7 +12,7 @@ class PushNotifier
     private ?string $projectId;
     private ?string $serviceAccountPath;
 
-    // Severity → notification priority mapping
+    // Severity -> notification priority mapping
     private const PRIORITY_MAP = [
         'info'     => 'default',
         'warning'  => 'high',
