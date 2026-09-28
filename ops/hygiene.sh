@@ -19,8 +19,16 @@ check() {
     fi
 }
 
+# Tracked files PLUS new files that are not gitignored. `git ls-files` alone
+# lists only what is already committed, so a brand new file - exactly the kind
+# most likely to be wrong - was silently skipped on a local run and only
+# checked once it had been committed.
+repo_files() {
+    git ls-files --cached --others --exclude-standard
+}
+
 text_files() {
-    git ls-files | grep -vE '\.(jpg|jpeg|png|gif|webp|ico|jar|apk|aab|keystore)$'
+    repo_files | grep -vE '\.(jpg|jpeg|png|gif|webp|ico|jar|apk|aab|keystore)$'
 }
 
 # The dashboard fetched every endpoint from an absolute path naming the one
@@ -28,7 +36,7 @@ text_files() {
 # but every fetch 404'd, so the charts were empty and the connection badge sat
 # on Disconnected with a live reading in the database.
 no_hardcoded_deploy_path() {
-    ! git ls-files 'server/*' | xargs grep -n "['\"\`]/hr2/" 2>/dev/null | grep .
+    ! repo_files | grep '^server/' | xargs grep -n "['\"\`]/hr2/" 2>/dev/null | grep .
 }
 
 # org.gradle.java.home pinned one machine's JDK by absolute path, so the build
@@ -52,7 +60,7 @@ toolchain_resolver_configured() {
 # textContent does not parse markup. Assigning SVG source to it renders the
 # source as visible text, which is what the pause button used to do.
 no_markup_in_textcontent() {
-    ! git ls-files 'server/*' | xargs grep -n "textContent *= *['\"\`]<" 2>/dev/null | grep .
+    ! repo_files | grep '^server/' | xargs grep -n "textContent *= *['\"\`]<" 2>/dev/null | grep .
 }
 
 # Credentials and the Firebase config must never be committed.
@@ -65,7 +73,7 @@ no_secrets_committed() {
 # or a dashboard session; validateApiKey() demands the key outright.
 all_endpoints_gated() {
     local missing=0 f
-    for f in $(git ls-files 'server/api/*.php'); do
+    for f in $(repo_files | grep '^server/api/.*\.php$'); do
         grep -qE 'requireReadAccess\(\)|validateApiKey\(\)' "$f" || { echo "  no gate in $f"; missing=1; }
     done
     [ "$missing" -eq 0 ]
