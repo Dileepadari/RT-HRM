@@ -2,9 +2,14 @@
 
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/adk_dev_logo_light.png">
+  <img src="./docs/assets/adk_dev_logo_dark.png" width="150" alt="ADK DEV" loading="lazy">
+</picture>
+
 # Real-Time Heart Rate Monitor
 
-**A BLE heart rate monitor: an Android app that reads the sensor, and a PHP dashboard that shows it live.**
+**A BLE heart rate monitor: an Android app that reads the sensor in a foreground service, and a PHP dashboard that shows the readings live.**
 
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
@@ -15,6 +20,10 @@
 ![Chart.js](https://img.shields.io/badge/Chart.js-%23FF6384.svg?style=for-the-badge&logo=chartdotjs&logoColor=white)
 <br>
 ![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
+
+<br><br>
+
+**[Developer documentation](./DEVDOC.md)** &middot; [The dashboard](#the-dashboard) &middot; [The app](#the-app) &middot; [Features](#features) &middot; [Setup](#setup)
 
 </div>
 

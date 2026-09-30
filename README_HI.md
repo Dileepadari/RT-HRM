@@ -2,6 +2,11 @@
 
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/adk_dev_logo_light.png">
+  <img src="./docs/assets/adk_dev_logo_dark.png" width="150" alt="ADK DEV" loading="lazy">
+</picture>
+
 # रियल-टाइम हार्ट रेट मॉनिटर (Real-Time Heart Rate Monitor)
 
 **एक BLE हार्ट रेट मॉनिटर: एक एंड्रॉइड ऐप जो सेंसर से डेटा पढ़ता है, और एक PHP डैशबोर्ड जो उसे लाइव दिखाता है।**
